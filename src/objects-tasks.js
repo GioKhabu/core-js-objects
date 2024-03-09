@@ -364,32 +364,64 @@ function group(array, keySelector, valueSelector) {
  */
 
 const cssSelectorBuilder = {
-  element(/* value */) {
-    throw new Error('Not implemented');
+  value: '',
+  order: 0,
+
+  element(value) {
+    return this.createSelector(value, 0, 'containsTag');
   },
 
-  id(/* value */) {
-    throw new Error('Not implemented');
+  id(value) {
+    return this.createSelector(`#${value}`, 1, 'containsId');
   },
 
-  class(/* value */) {
-    throw new Error('Not implemented');
+  class(value) {
+    return this.createSelector(`.${value}`, 2);
   },
 
-  attr(/* value */) {
-    throw new Error('Not implemented');
+  attr(value) {
+    return this.createSelector(`[${value}]`, 3);
   },
 
-  pseudoClass(/* value */) {
-    throw new Error('Not implemented');
+  pseudoClass(value) {
+    return this.createSelector(`:${value}`, 4);
   },
 
-  pseudoElement(/* value */) {
-    throw new Error('Not implemented');
+  pseudoElement(value) {
+    return this.createSelector(`::${value}`, 5, 'containsPseudoElement');
   },
 
-  combine(/* selector1, combinator, selector2 */) {
-    throw new Error('Not implemented');
+  combine(selector1, combinator, selector2) {
+    return Object.create(this, {
+      value: { value: `${selector1.value} ${combinator} ${selector2.value}` },
+    });
+  },
+
+  createSelector(value, order, containsElement = null) {
+    if (
+      (containsElement === 'containsTag' && this.containsTag) ||
+      (containsElement === 'containsId' && this.containsId) ||
+      (containsElement === 'containsPseudoElement' &&
+        this.containsPseudoElement)
+    ) {
+      throw new Error(
+        'Element, id and pseudo-element should not occur more then one time inside the selector'
+      );
+    }
+    if (order < this.order) {
+      throw new Error(
+        'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element'
+      );
+    }
+    const obj = Object.create(this);
+    obj.value = this.value + value;
+    obj.order = order;
+    if (containsElement) obj[containsElement] = true;
+    return obj;
+  },
+
+  stringify() {
+    return this.value;
   },
 };
 
